@@ -1,0 +1,46 @@
+.custom-header {
+  ion-toolbar {
+    --background: #666666;
+    --color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    
+    
+    
+    /* Estilo para los botones laterales  3880ff*/
+    ion-buttons {
+      min-width: 50px; /* Ancho mínimo para mantener consistencia */
+      ion-icon {
+        font-size: 30px; // Ajusta el tamaño según lo necesites
+      }
+    }
+    
+    .header-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: auto;
+      height: 10%;
+      max-width: 60%; /* Evita que ocupe demasiado espacio */
+      
+      .header-icon {
+        font-size: 30px;
+        margin-right: 8px;
+        color: white;
+      }
+      
+      ion-title {
+        padding: 0;
+        font-size: 1.1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}

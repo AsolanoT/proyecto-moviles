@@ -1,0 +1,78 @@
+.login-page { 
+    &__image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 40px;
+    }
+
+  
+    &__header {
+      background-color: #666666 ;
+    }
+    
+    
+    >img {
+        height: 300px;
+    }
+
+    >h2 {
+        font-size: 40px;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    ion-input {
+        color: #3A8EBA;
+        background-color: #FFFFFF;
+        border-radius: 25px;
+        --padding-top: 15px;
+        --padding-end: 15px;
+        --padding-bottom: 15px;
+        --padding-start: 15px;
+        text-align: left;
+    }
+
+    ion-button {
+        margin: 15px 0 0 0;
+        background-color: #18D6EB;
+    }
+
+    .error {
+        color: #f00;
+    }
+
+    .custom-item {
+        --background: transparent !important;
+        --color: #3A8EBA;
+        border: none;
+        font-weight: bold;
+    }
+
+    .custom-icon {
+        color: #ffffff !important;
+        font-size: 1.5rem;
+    }
+}
+
+/* Estilos para el selector de documento */
+.document-type-select {
+    width: 100%;
+    
+    &::part(icon) {
+      color: var(--ion-color-medium);
+    }
+    
+    &::part(text) {
+      text-align: right;
+    }
+  }
+  
+  /* Para el item con label apilado */
+  .custom-item {
+    ion-label[position="stacked"] {
+      color: var(--ion-color-medium);
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+  }
