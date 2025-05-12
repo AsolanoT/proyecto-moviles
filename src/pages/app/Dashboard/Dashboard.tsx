@@ -14,62 +14,157 @@ import {
   IonImg,
   IonButton,
   IonIcon,
+  IonLabel,
+  IonItem,
+  IonBadge,
 } from "@ionic/react";
-import { chevronDownOutline, chevronUpOutline } from "ionicons/icons";
+import {
+  chevronDownOutline,
+  chevronUpOutline,
+  peopleOutline,
+  locationOutline,
+  calendarOutline,
+  arrowForwardOutline,
+  addOutline,
+} from "ionicons/icons";
 import { RefresherEventDetail } from "@ionic/core";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Dashboard.scss";
 
-interface TouristSpot {
-  id: string;
+import { useHistory } from "react-router-dom";
+import { fetchClients } from "../../../services/clientService";
+import { fetchTouristSites } from "../../../services/touristSiteService";
+import { fetchReservations } from "../../../services/reservationService";
+
+interface SummaryCardProps {
   title: string;
-  description: string;
-  imageUrl: string;
-  location: string;
-  details?: {
-    hours?: string;
-    price?: string;
-    contact?: string;
-  };
+  icon: string;
+  count: number;
+  color: string;
+  children: React.ReactNode;
+  onViewAll?: () => void;
+  onCreateNew?: () => void;
 }
+
+const SummaryCard: React.FC<SummaryCardProps> = ({
+  title,
+  icon,
+  count,
+  color,
+  children,
+  onViewAll,
+  onCreateNew,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const history = useHistory();
+
+  return (
+    <IonCard style={{ borderLeft: `4px solid ${color}` }}>
+      <IonItem
+        button
+        detail={false}
+        lines="none"
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{ "--background": "transparent" }}
+      >
+        <IonIcon slot="start" icon={icon} style={{ color }} />
+        <IonLabel style={{ fontWeight: "bold" }}>{title}</IonLabel>
+        <IonBadge color="light" style={{ color, marginRight: "8px" }}>
+          {count}
+        </IonBadge>
+        <IonIcon
+          icon={isExpanded ? chevronUpOutline : chevronDownOutline}
+          slot="end"
+          color="medium"
+        />
+      </IonItem>
+
+      {isExpanded && (
+        <>
+          <IonCardContent>{children}</IonCardContent>
+
+          <IonGrid>
+            <IonRow className="ion-justify-content-end">
+              <IonCol size="auto">
+                <IonButton fill="clear" size="small" onClick={onViewAll}>
+                  <IonIcon slot="start" icon={arrowForwardOutline} />
+                  Ver todos
+                </IonButton>
+              </IonCol>
+              <IonCol size="auto">
+                <IonButton
+                  fill="solid"
+                  size="small"
+                  color={color}
+                  onClick={onCreateNew}
+                >
+                  <IonIcon slot="start" icon={addOutline} />
+                  Nuevo
+                </IonButton>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
+        </>
+      )}
+    </IonCard>
+  );
+};
 
 export const Dashboard: React.FC = () => {
   const [present] = useIonToast();
-  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
-  const [spots, setSpots] = useState<TouristSpot[]>([
-    {
-      id: "1",
-      title: "Parque Santander",
-      description: "Plaza principal de Neiva...",
-      imageUrl: "https://api.a0.dev/assets/image?text=neiva...",
-      location: "Centro de Neiva",
-      details: {
-        hours: "Abierto 24 horas",
-        price: "Gratis",
-        contact: "Oficina de Turismo: +57 123456789",
-      },
-    },
-    // ... otros spots
-  ]);
+  const history = useHistory();
+  const [clients, setClients] = useState<any[]>([]);
+  const [sites, setSites] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      const [clientsData, sitesData, reservationsData] = await Promise.all([
+        fetchClients(),
+        fetchTouristSites(),
+        fetchReservations(),
+      ]);
+
+      setClients(clientsData.slice(0, 3));
+      setSites(sitesData.slice(0, 3));
+      setReservations(reservationsData.slice(0, 3));
+    } catch (error) {
+      console.error("Error loading data:", error);
+      present({
+        message: "Error al cargar los datos",
+        duration: 2000,
+        position: "top",
+        color: "danger",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleRefresh = (event: CustomEvent<RefresherEventDetail>) => {
-    setTimeout(() => {
+    loadData().then(() => {
+      event.detail.complete();
       present({
         message: "Datos actualizados",
         duration: 1500,
         position: "top",
       });
-      event.detail.complete();
-    }, 1500);
+    });
   };
 
-  const toggleCardExpand = (id: string) => {
-    setExpandedCardId(expandedCardId === id ? null : id);
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString("es-ES", options);
   };
-
-  function openReservationModal(spot: TouristSpot): void {
-    // Implementar lógica de reserva
-  }
 
   return (
     <IonContent fullscreen className="dashboard-page">
@@ -78,92 +173,93 @@ export const Dashboard: React.FC = () => {
       </IonRefresher>
 
       <div className="welcome-section">
-        <h2>Bienvenido a Neiva</h2>
-        <p>Descubre los mejores lugares turísticos de nuestra ciudad</p>
+        <h2>Bienvenido al Sistema</h2>
+        <p>Resumen de actividades y registros recientes</p>
       </div>
 
-      <div className="spots-container">
-        <h3 className="section-title">Destinos Populares</h3>
-
-        {spots.map((spot) => (
-          <IonCard
-            key={spot.id}
-            className={`spot-card ${
-              expandedCardId === spot.id ? "expanded" : ""
-            }`}
-          >
-            <IonImg src={spot.imageUrl} className="spot-image" />
-            <div className="spot-gradient">
-              <IonCardHeader>
-                <IonCardSubtitle>{spot.location}</IonCardSubtitle>
-                <IonCardTitle>{spot.title}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <p className="short-description">
-                  {spot.description.substring(0, 60)}...
+      <div className="summary-container">
+        <SummaryCard
+          title="Clientes"
+          icon={peopleOutline}
+          count={clients.length}
+          color="#3A8EBA"
+          onViewAll={() => history.push("/clients")}
+          onCreateNew={() => history.push("/create-client")}
+        >
+          {clients.map((client) => (
+            <IonItem
+              key={client.id}
+              button
+              detail={false}
+              onClick={() => history.push(`/client/${client.id}`)}
+            >
+              <IonLabel>
+                <h3>{client.fullName}</h3>
+                <p>{client.phone}</p>
+              </IonLabel>
+              <IonLabel slot="end" className="ion-text-end">
+                <p>
+                  {formatDate(client.createdAt || new Date().toISOString())}
                 </p>
+              </IonLabel>
+            </IonItem>
+          ))}
+        </SummaryCard>
 
-                {expandedCardId === spot.id && (
-                  <div className="expanded-details">
-                    <p>{spot.description}</p>
+        <SummaryCard
+          title="Sitios Turísticos"
+          icon={locationOutline}
+          count={sites.length}
+          color="#10B981"
+          onViewAll={() => history.push("/tourist-sites")}
+          onCreateNew={() => history.push("/create-touristsite")}
+        >
+          {sites.map((site) => (
+            <IonItem
+              key={site.id}
+              button
+              detail={false}
+              onClick={() => history.push(`/tourist-site/${site.id}`)}
+            >
+              <IonLabel>
+                <h3>{site.title}</h3>
+                <p>{site.location}</p>
+              </IonLabel>
+              <IonBadge slot="end" color="light">
+                {site.type}
+              </IonBadge>
+            </IonItem>
+          ))}
+        </SummaryCard>
 
-                    <IonGrid>
-                      <IonRow>
-                        <IonCol size="6">
-                          <div className="detail-item">
-                            <strong>Horario:</strong>
-                            <span>{spot.details?.hours}</span>
-                          </div>
-                        </IonCol>
-                        <IonCol size="6">
-                          <div className="detail-item">
-                            <strong>Precio:</strong>
-                            <span>{spot.details?.price}</span>
-                          </div>
-                        </IonCol>
-                        <IonCol size="12">
-                          <div className="detail-item">
-                            <strong>Contacto:</strong>
-                            <span>{spot.details?.contact}</span>
-                          </div>
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                    <IonButton
-                      fill="solid"
-                      color="primary"
-                      onClick={() => openReservationModal(spot)}
-                      className="reservation-button"
-                    >
-                      Registrar Reserva
-                    </IonButton>
-                  </div>
-                )}
-
-                <IonButton
-                  fill="clear"
-                  className="details-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleCardExpand(spot.id);
-                  }}
-                >
-                  {expandedCardId === spot.id ? (
-                    <>
-                      <IonIcon icon={chevronUpOutline} slot="end" />
-                      Ver menos
-                    </>
-                  ) : (
-                    <>
-                      <IonIcon icon={chevronDownOutline} slot="end" />
-                      Ver detalles
-                    </>
-                  )}
-                </IonButton>
-              </IonCardContent>
-            </div>
-          </IonCard>
-        ))}
+        <SummaryCard
+          title="Reservaciones"
+          icon={calendarOutline}
+          count={reservations.length}
+          color="#F59E0B"
+          onViewAll={() => history.push("/reservations")}
+          onCreateNew={() => history.push("/create-reservation")}
+        >
+          {reservations.map((reservation) => (
+            <IonItem
+              key={reservation.id}
+              button
+              detail={false}
+              onClick={() => history.push(`/reservation/${reservation.id}`)}
+            >
+              <IonLabel>
+                <h3>#{reservation.id}</h3>
+                <p>{reservation.cliente?.fullName || "Cliente"}</p>
+              </IonLabel>
+              <IonLabel slot="end" className="ion-text-end">
+                <p>{formatDate(reservation.fecha)}</p>
+                <IonBadge color={reservation.status ? "success" : "warning"}>
+                  {reservation.status ? "Confirmada" : "Pendiente"}
+                </IonBadge>
+              </IonLabel>
+            </IonItem>
+          ))}
+        </SummaryCard>
       </div>
     </IonContent>
   );

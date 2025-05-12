@@ -36,6 +36,7 @@ import { CreateReservation } from "./pages/app/Management/CreateReservation/Crea
 import { CreateClient } from "./pages/app/Management/Clients/CreateClient";
 import AuthLayout from "./components/layouts/AuthLayout";
 import MainLayout from "./components/layouts/MainLayout";
+import { CreateFactura } from "./pages/app/Management/CreateFactura/CreateFactura";
 
 /* Layouts */
 
@@ -99,6 +100,21 @@ export default function App() {
           <Route exact path="/create-client">
             <MainLayout pageName="Cliente">
               <CreateClient />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/create-factura">
+            <MainLayout pageName="Factura">
+              <CreateFactura
+                status={false}
+                reservacion={{
+                  id: "",
+                }}
+                descripcion={""}
+                metodoPago={""}
+                estadoPago={""}
+                reservacionId={""}
+              />
             </MainLayout>
           </Route>
 

@@ -120,7 +120,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, pageName }) => {
               <IonItem
                 button
                 className="menu-item"
-                onClick={() => handleNavigation("/generate-invoice")}
+                onClick={() => handleNavigation("/create-factura")}
               >
                 <IonIcon
                   slot="start"
