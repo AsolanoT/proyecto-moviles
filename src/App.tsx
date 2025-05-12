@@ -1,4 +1,9 @@
-import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
+import {
+  IonApp,
+  IonRouterOutlet,
+  IonSplitPane,
+  setupIonicReact,
+} from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 import { HandlerRoutes } from "./pages/routes";
 import { Redirect, Route } from "react-router-dom";
@@ -33,6 +38,15 @@ import "@ionic/react/css/palettes/dark.system.css";
 
 /* Theme variables */
 import "./theme/variables.css";
+import { Signup } from "./pages/Signup/Signup";
+import { ForgotPassword } from "./pages/Login/ForgotPassword/ForgotPassword";
+import SuccessModal from "./components/Modals/SuccessModal";
+import { Dashboard } from "./pages/Dashboard/Dashboard";
+import CustomHeader from "./components/Header/CustomHeader";
+import { VerifyEmail } from "./pages/Login/VerifyEmail/VerifyEmail";
+import { TouristSite } from "./pages/Management/CreateTouristSites/TouristSites";
+import { CreateReservation } from "./pages/Management/CreateReservation/CreateReservation";
+import { CreateClient } from "./pages/Management/Clients/CreateClient";
 
 setupIonicReact();
 {
@@ -54,10 +68,31 @@ export default function App() {
   return (
     <IonApp>
       <IonReactRouter>
+        {/* CustomHeader debe envolver las rutas */}
+        <CustomHeader
+          pageName="App"
+          showMenuButton={false}
+          showLogoutButton={false}
+        />
+
         <IonRouterOutlet id="main-content">
-          <Route path="/welcome" component={Welcome} exact />
-          <Route path="/login" component={Login} exact />
-          <HandlerRoutes />
+          {/* Define todas tus rutas aquí */}
+          <Route exact path="/welcome" component={Welcome} />
+          <Route exact path="/dashboard" component={Dashboard} />
+          <Route exact path="/signup" component={Signup} />
+          <Route exact path="/login" component={Login} />
+          <Route exact path="/signup-success" component={SuccessModal} />
+          <Route exact path="/verify-email" component={VerifyEmail} />
+          <Route exact path="/create-touristsite" component={TouristSite} />
+          <Route exact path="/create-client" component={CreateClient} />
+          <Route exact path="/forgot-password" component={ForgotPassword} />
+          <Route
+            exact
+            path="/create-reservation"
+            component={CreateReservation}
+          />
+          {/* Otras rutas... */}
+
           <Redirect exact from="/" to="/welcome" />
         </IonRouterOutlet>
       </IonReactRouter>

@@ -8,15 +8,14 @@ export function Welcome() {
 
   return (
     <IonPage>
+      {/* Logo de la compañía */}
+      <div className="welcome-page__image">
+        <img src={company.logo} alt="Entrar" />
+      </div>
       <IonContent className="welcome-page">
-        {/* Logo de la compañía */}
-        <div className="welcome-page__image">
-          <img src={company.logo} alt="Entrar" />
-        </div>
-
         <div className="welcome-container">
           <h1>BIENVENIDOS</h1>
-          <h2>Explora Neiva</h2>
+          <h2>Ingresa y descubre nuevos lugares.</h2>
 
           <div className="button-group">
             <IonButton expand="block" onClick={() => history.push("/login")}>
@@ -26,7 +25,7 @@ export function Welcome() {
             <IonButton
               expand="block"
               fill="outline"
-              onClick={() => history.push("/login")}
+              onClick={() => history.push("/signup")}
             >
               Registrarse
             </IonButton>

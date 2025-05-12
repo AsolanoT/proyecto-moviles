@@ -1,194 +1,202 @@
 import {
-  IonContent,
   IonInput,
   IonButton,
+  IonPage,
+  IonContent,
   IonItem,
-  IonLabel,
   IonIcon,
-  IonSelect,
-  IonSelectOption,
-  IonPage, // Añadido
+  IonLabel,
+  IonCheckbox,
+  useIonToast,
+  IonText,
 } from "@ionic/react";
-import {
-  personOutline,
-  mailOutline,
-  callOutline,
-  calendarOutline,
-  cardOutline,
-} from "ionicons/icons";
-import { useFormik } from "formik";
-import "./Login.scss";
-import { company } from "../../assets";
 import CustomHeader from "../../components/Header/CustomHeader";
+import { useFormik } from "formik";
+import { useHistory } from "react-router-dom";
+import "./Login.scss";
+import {
+  eyeOutline,
+  eyeOffOutline,
+  mailOutline,
+  lockClosedOutline,
+} from "ionicons/icons";
+import { useEffect, useState } from "react";
 import { initialValues, validationSchema } from "./Login.form";
-
-const handleMenuClick = () => {
-  console.log("Menú clickeado");
-};
+import { loginUser } from "../../services/AuthService";
 
 export function Login() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [present] = useIonToast();
+
   const formik = useFormik({
     initialValues: initialValues(),
     validationSchema: validationSchema(),
     validateOnChange: false,
-    onSubmit: (values) => {
-      console.log("Formulario enviado", values);
+    onSubmit: async (values) => {
+      setIsSubmitting(true);
+
+      try {
+        const response = await loginUser({
+          email: values.email.trim().toLowerCase(),
+          password: values.password,
+        });
+
+        console.log("Login exitoso:", response);
+
+        // Guardar en localStorage si el usuario seleccionó "Recordarme"
+        if (rememberMe) {
+          localStorage.setItem("rememberedEmail", values.email);
+        } else {
+          localStorage.removeItem("rememberedEmail");
+        }
+
+        // Redirigir al dashboard
+        history.push("/dashboard");
+      } catch (error: any) {
+        console.error("Error en login:", error);
+        present({
+          message: error.message || "Error al iniciar sesión",
+          duration: 3000,
+          position: "top",
+          color: "danger",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     },
   });
 
+  const history = useHistory();
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+  // Cargar email recordado si existe
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      formik.setFieldValue("email", rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
   return (
     <IonPage>
-      <CustomHeader pageName="Login" />
+      {/* Header personalizado 
+      <CustomHeader
+        pageName="Iniciar sesión"
+        showMenuButton={false}
+        showLogoutButton={false}
+      />*/}
 
       <IonContent class="login-page ion-padding">
-        {/* Logo de la compañía 
-        <div className="login-page__image">
-          <img src={company.logo} alt="Entrar" />
+        <h2>Bienvenido</h2>
+        <div className="login-container">
+          {/* Descripción */}
+          <div className="login-description">
+            <p>Por favor, ingresa tus credenciales para acceder a tu cuenta</p>
+          </div>
+
+          {/* Formulario de login */}
+          <form onSubmit={formik.handleSubmit}>
+            {/* Campo de email */}
+            <IonItem className="custom-itemheader">
+              <IonIcon
+                icon={mailOutline}
+                slot="start"
+                className="custom-icon"
+              />
+              <IonLabel>Correo Electrónico</IonLabel>
+            </IonItem>
+            <IonItem className="custom-item">
+              <IonInput
+                type="email"
+                placeholder="tucorreo@ejemplo.com"
+                onIonChange={(e) =>
+                  formik.setFieldValue("email", e.detail.value)
+                }
+                className={formik.errors.email ? "ion-invalid" : ""}
+              />
+            </IonItem>
+            {formik.errors.email && (
+              <IonText color="danger" className="error-message">
+                <small>{formik.errors.email}</small>
+              </IonText>
+            )}
+
+            {/* Campo de contraseña */}
+            <IonItem className="custom-itemheader">
+              <IonIcon
+                icon={lockClosedOutline}
+                slot="start"
+                className="custom-icon"
+              />
+              <IonLabel>Contraseña</IonLabel>
+            </IonItem>
+            <IonItem className="custom-item" lines="none">
+              <IonInput
+                type={showPassword ? "text" : "password"}
+                placeholder="Ingresa tu contraseña"
+                onIonChange={(e) =>
+                  formik.setFieldValue("password", e.detail.value)
+                }
+                className={formik.errors.password ? "ion-invalid" : ""}
+              />
+              <IonIcon
+                icon={showPassword ? eyeOffOutline : eyeOutline}
+                slot="end"
+                onClick={togglePasswordVisibility}
+                className="password-toggle"
+              />
+            </IonItem>
+            {formik.errors.password && (
+              <IonText color="danger" className="error-message">
+                <small>{formik.errors.password}</small>
+              </IonText>
+            )}
+
+            {/* Opciones de recordar y olvidar contraseña */}
+            <div className="login-options">
+              <IonItem lines="none">
+                <IonCheckbox
+                  checked={rememberMe}
+                  onIonChange={(e) => setRememberMe(e.detail.checked)}
+                  slot="start"
+                />
+                <IonLabel>Recordarme</IonLabel>
+              </IonItem>
+            </div>
+            <div className="login-options">
+              <IonItem lines="none">
+                <IonButton
+                  fill="clear"
+                  routerLink="/forgot-password"
+                  className="forgot-password"
+                >
+                  ¿Olvidaste tu contraseña?
+                </IonButton>
+              </IonItem>
+            </div>
+
+            {/* Botón de login */}
+            <div className="button-row">
+              {/* Botón de registro */}
+              <IonButton expand="block" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
+              </IonButton>
+            </div>
+
+            {/* Enlace a registro */}
+            <div className="register-link">
+              <p>
+                ¿No tienes una cuenta? <a href="/signup">Regístrate</a>
+              </p>
+            </div>
+          </form>
         </div>
-        */}
-
-        <h2>Registro de personas</h2>
-
-        {/* Campos del formulario */}
-        {/* TIPO DE DOCUMENTO*/}
-        <IonItem className="custom-item">
-          <IonIcon icon={cardOutline} slot="start" className="custom-icon" />
-          <IonLabel position="stacked">Tipo de Documento</IonLabel>
-          <IonSelect
-            interface="action-sheet"
-            placeholder="Seleccione tipo de documento"
-            value={formik.values.documentType}
-            onIonChange={(e) =>
-              formik.setFieldValue("documentType", e.detail.value)
-            }
-            className="document-type-select"
-          >
-            <IonSelectOption value="cc">Cédula de Ciudadanía</IonSelectOption>
-            <IonSelectOption value="ti">Tarjeta de Identidad</IonSelectOption>
-            <IonSelectOption value="ce">Cédula de Extranjería</IonSelectOption>
-            <IonSelectOption value="passport">Pasaporte</IonSelectOption>
-            <IonSelectOption value="nit">NIT</IonSelectOption>
-          </IonSelect>
-        </IonItem>
-        {formik.errors.documentType && (
-          <span className="error">{formik.errors.documentType}</span>
-        )}
-
-        {/* NUMERO DE DOCUMENTO*/}
-        <IonItem className="custom-item">
-          <IonIcon icon={cardOutline} slot="start" className="custom-icon" />
-          <IonLabel>Número de Documento</IonLabel>
-        </IonItem>
-        <IonInput
-          placeholder="Ingrese número de documento"
-          onIonChange={(e) =>
-            formik.setFieldValue("documentNumber", e.detail.value)
-          }
-        />
-        {formik.errors.documentType && (
-          <span className="error">{formik.errors.documentNumber}</span>
-        )}
-
-        {/* FECHA DE NACIMIENTO*/}
-        <IonItem className="custom-item">
-          <IonIcon
-            icon={calendarOutline}
-            slot="start"
-            className="custom-icon"
-          />
-          <IonLabel>Fecha de Nacimiento</IonLabel>
-        </IonItem>
-        <IonInput
-          placeholder="Ingrese su fecha de nacimiento"
-          onIonChange={(e) => formik.setFieldValue("birthDate", e.detail.value)}
-        />
-        {formik.errors.documentType && (
-          <span className="error">{formik.errors.birthDate}</span>
-        )}
-
-        {/* NOMBRE COMPLETO*/}
-        <IonItem className="custom-item">
-          <IonIcon icon={personOutline} slot="start" className="custom-icon" />
-          <IonLabel>Nombre Completo</IonLabel>
-        </IonItem>
-        <IonInput
-          placeholder="Ingrese su nombre completo"
-          onIonChange={(e) => formik.setFieldValue("fullName", e.detail.value)}
-        />
-        {formik.errors.documentType && (
-          <span className="error">{formik.errors.fullName}</span>
-        )}
-
-        {/* CORREO ELECTRONICO*/}
-        <IonItem className="custom-item">
-          <IonIcon icon={mailOutline} slot="start" className="custom-icon" />
-          <IonLabel>Correo Electrónico</IonLabel>
-        </IonItem>
-        <IonInput
-          type="email"
-          placeholder="Ingrese su correo electrónico"
-          onIonChange={(e) => formik.setFieldValue("email", e.detail.value)}
-        />
-        {formik.errors.documentType && (
-          <span className="error">{formik.errors.email}</span>
-        )}
-
-        {/* NUMERO DE TELEFONO*/}
-        <IonItem className="custom-item">
-          <IonIcon icon={callOutline} slot="start" className="custom-icon" />
-          <IonLabel>Número de Teléfono</IonLabel>
-        </IonItem>
-        <IonInput
-          type="tel"
-          placeholder="Ingrese su número de teléfono"
-          onIonChange={(e) => formik.setFieldValue("phone", e.detail.value)}
-        />
-        {formik.errors.documentType && (
-          <span className="error">{formik.errors.phone}</span>
-        )}
-
-        {/* Botón de registro */}
-        <IonButton expand="block" onClick={() => formik.handleSubmit()}>
-          Registrar
-        </IonButton>
       </IonContent>
     </IonPage>
   );
-}
-
-{
-  /*<IonHeader className="login-page__header">
-        <IonToolbar>
-          <IonTitle>Login</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-
-      <CustomHeader pageName="Login" onMenuClick={handleMenuClick} />
-      <IonCard>
-        <div className="login-page__image">
-          <img src={image.logo} alt="Entrar" />
-        </div>
-      </IonCard>
-      */
-}
-{
-  /*
-    <IonInput placeholder="Seleccione su tipo de documento"/>
-    <span className="error">Usurio obligatorio</span>
-
-    <IonInput placeholder="Ingrese numero de documento"/>
-    <span className="error">Usurio obligatorio</span>
-
-    <IonInput placeholder="Fecha de Nacimiento"/>
-    <span className="error">Usurio obligatorio</span>
-
-    <IonInput placeholder="Nombre Completo"/>
-    <span className="error">Usurio obligatorio</span>
-
-    <IonInput placeholder="Correo Electrónico"/>
-    <span className="error">Usurio obligatorio</span>
-
-    <IonInput placeholder="Número de Teléfono"/>
-    <span className="error">Usurio obligatorio</span>
-    */
 }
