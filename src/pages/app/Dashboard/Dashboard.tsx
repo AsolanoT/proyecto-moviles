@@ -26,6 +26,7 @@ import {
   calendarOutline,
   arrowForwardOutline,
   addOutline,
+  cashOutline,
 } from "ionicons/icons";
 import { RefresherEventDetail } from "@ionic/core";
 import { useState, useEffect } from "react";
@@ -35,6 +36,7 @@ import { useHistory } from "react-router-dom";
 import { fetchClients } from "../../../services/clientService";
 import { fetchTouristSites } from "../../../services/touristSiteService";
 import { fetchReservations } from "../../../services/reservationService";
+import { fetchFacturas } from "../../../services/facturaService";
 
 interface SummaryCardProps {
   title: string;
@@ -116,19 +118,23 @@ export const Dashboard: React.FC = () => {
   const [clients, setClients] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
+  const [facturas, setFacturas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
-      const [clientsData, sitesData, reservationsData] = await Promise.all([
-        fetchClients(),
-        fetchTouristSites(),
-        fetchReservations(),
-      ]);
+      const [clientsData, sitesData, reservationsData, facturasData] =
+        await Promise.all([
+          fetchClients(),
+          fetchTouristSites(),
+          fetchReservations(),
+          fetchFacturas(),
+        ]);
 
       setClients(clientsData.slice(0, 3));
       setSites(sitesData.slice(0, 3));
       setReservations(reservationsData.slice(0, 3));
+      setFacturas(facturasData.slice(0, 3));
     } catch (error) {
       console.error("Error loading data:", error);
       present({
@@ -260,7 +266,50 @@ export const Dashboard: React.FC = () => {
             </IonItem>
           ))}
         </SummaryCard>
+
+        {/* Nueva Card de Facturas */}
+        <SummaryCard
+          title="Facturas"
+          icon={cashOutline}
+          count={facturas.length}
+          color="#00d47e"
+          onViewAll={() => history.push("/facturas")}
+          onCreateNew={() => history.push("/create-factura")}
+        >
+          {facturas.map((factura) => (
+            <IonItem
+              key={factura.id}
+              button
+              detail={false}
+              onClick={() => history.push(`/factura/${factura.id}`)}
+            >
+              <IonLabel>
+                <h3>#{factura.id}</h3>
+                <p>{factura.descripcion || "Factura sin descripción"}</p>
+              </IonLabel>
+              <IonLabel slot="end" className="ion-text-end">
+                <p>{formatDate(factura.fecha || new Date().toISOString())}</p>
+                <IonBadge color={getStatusColor(factura.estadoPago)}>
+                  {factura.estadoPago || "Pendiente"}
+                </IonBadge>
+              </IonLabel>
+            </IonItem>
+          ))}
+        </SummaryCard>
       </div>
     </IonContent>
   );
+};
+// Función auxiliar para determinar el color del badge según el estado de pago
+const getStatusColor = (estadoPago: string) => {
+  switch (estadoPago?.toLowerCase()) {
+    case "pagado":
+      return "success";
+    case "pendiente":
+      return "warning";
+    case "cancelado":
+      return "danger";
+    default:
+      return "medium";
+  }
 };
