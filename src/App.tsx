@@ -1,14 +1,6 @@
-import {
-  IonApp,
-  IonRouterOutlet,
-  IonSplitPane,
-  setupIonicReact,
-} from "@ionic/react";
+import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { HandlerRoutes } from "./pages/routes";
 import { Redirect, Route } from "react-router-dom";
-import { Welcome } from "./pages/Welcome/Welcome";
-import { Login } from "./pages/Login/Login";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -26,72 +18,89 @@ import "@ionic/react/css/text-transformation.css";
 import "@ionic/react/css/flex-utils.css";
 import "@ionic/react/css/display.css";
 
-/**
- * Ionic Dark Mode
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
+/* Dark mode */
 import "@ionic/react/css/palettes/dark.system.css";
 
 /* Theme variables */
 import "./theme/variables.css";
-import { Signup } from "./pages/Signup/Signup";
-import { ForgotPassword } from "./pages/Login/ForgotPassword/ForgotPassword";
-import SuccessModal from "./components/Modals/SuccessModal";
-import { Dashboard } from "./pages/Dashboard/Dashboard";
-import CustomHeader from "./components/Header/CustomHeader";
-import { VerifyEmail } from "./pages/Login/VerifyEmail/VerifyEmail";
-import { TouristSite } from "./pages/Management/CreateTouristSites/TouristSites";
-import { CreateReservation } from "./pages/Management/CreateReservation/CreateReservation";
-import { CreateClient } from "./pages/Management/Clients/CreateClient";
+
+/* Pages */
+import { Welcome } from "./pages/Welcome/Welcome";
+import { Login } from "./pages/auth/Login/Login";
+import { Signup } from "./pages/auth/Signup/Signup";
+import { ForgotPassword } from "./pages/auth/Login/ForgotPassword/ForgotPassword";
+import { Dashboard } from "./pages/app/Dashboard/Dashboard";
+import { VerifyEmail } from "./pages/auth/Login/VerifyEmail/VerifyEmail";
+import { TouristSite } from "./pages/app/Management/CreateTouristSites/TouristSites";
+import { CreateReservation } from "./pages/app/Management/CreateReservation/CreateReservation";
+import { CreateClient } from "./pages/app/Management/Clients/CreateClient";
+import AuthLayout from "./components/layouts/AuthLayout";
+import MainLayout from "./components/layouts/MainLayout";
+
+/* Layouts */
 
 setupIonicReact();
-{
-  /*}
-export default function App() {
-  return (
-    <IonApp>
-      <IonReactRouter>
-        <IonRouterOutlet id="main-content">
-          <HandlerRoutes />
-        </IonRouterOutlet>
-      </IonReactRouter>
-    </IonApp>
-  );
-}*/
-}
 
 export default function App() {
   return (
     <IonApp>
       <IonReactRouter>
-        {/* CustomHeader debe envolver las rutas */}
-        <CustomHeader
-          pageName="App"
-          showMenuButton={false}
-          showLogoutButton={false}
-        />
+        <IonRouterOutlet>
+          {/* Rutas públicas (sin menú) */}
+          <Route exact path="/welcome">
+            <AuthLayout pageName="Bienvenido">
+              <Welcome />
+            </AuthLayout>
+          </Route>
 
-        <IonRouterOutlet id="main-content">
-          {/* Define todas tus rutas aquí */}
-          <Route exact path="/welcome" component={Welcome} />
-          <Route exact path="/dashboard" component={Dashboard} />
-          <Route exact path="/signup" component={Signup} />
-          <Route exact path="/login" component={Login} />
-          <Route exact path="/signup-success" component={SuccessModal} />
-          <Route exact path="/verify-email" component={VerifyEmail} />
-          <Route exact path="/create-touristsite" component={TouristSite} />
-          <Route exact path="/create-client" component={CreateClient} />
-          <Route exact path="/forgot-password" component={ForgotPassword} />
-          <Route
-            exact
-            path="/create-reservation"
-            component={CreateReservation}
-          />
-          {/* Otras rutas... */}
+          <Route exact path="/login">
+            <AuthLayout pageName="Iniciar Sesión">
+              <Login />
+            </AuthLayout>
+          </Route>
+
+          <Route exact path="/signup">
+            <AuthLayout pageName="Registro">
+              <Signup />
+            </AuthLayout>
+          </Route>
+
+          <Route exact path="/forgot-password">
+            <AuthLayout pageName="Recuperar Contraseña">
+              <ForgotPassword />
+            </AuthLayout>
+          </Route>
+
+          <Route exact path="/verify-email">
+            <AuthLayout pageName="Verificar Email">
+              <VerifyEmail />
+            </AuthLayout>
+          </Route>
+
+          {/* Rutas privadas (con menú) */}
+          <Route exact path="/dashboard">
+            <MainLayout pageName="Dashboard">
+              <Dashboard />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/create-touristsite">
+            <MainLayout pageName="Sitios Turísticos">
+              <TouristSite />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/create-reservation">
+            <MainLayout pageName="Reservación">
+              <CreateReservation />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/create-client">
+            <MainLayout pageName="Cliente">
+              <CreateClient />
+            </MainLayout>
+          </Route>
 
           <Redirect exact from="/" to="/welcome" />
         </IonRouterOutlet>

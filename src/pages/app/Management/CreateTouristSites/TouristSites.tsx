@@ -31,8 +31,8 @@ import {
   readerOutline,
   homeOutline,
 } from "ionicons/icons";
-import CustomHeader from "../../../components/Header/CustomHeader";
-import { createTouristSite } from "../../../services/touristSiteService";
+import CustomHeader from "../../../../components/Header/CustomHeader";
+import { createTouristSite } from "../../../../services/touristSiteService";
 
 export function TouristSite() {
   const history = useHistory();

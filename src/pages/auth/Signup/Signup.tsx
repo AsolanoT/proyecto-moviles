@@ -14,7 +14,7 @@ import {
   useIonToast,
   IonText,
 } from "@ionic/react";
-import CustomHeader from "../../components/Header/CustomHeader";
+
 import { useFormik } from "formik";
 import { useHistory } from "react-router-dom";
 import "./Signup.scss";
@@ -32,7 +32,8 @@ import {
 } from "ionicons/icons";
 import { initialValues, validationSchema } from "./signup.form";
 import { useState } from "react";
-import { registerUser } from "../../services/AuthService";
+import CustomHeader from "../../../components/Header/CustomHeader";
+import { registerUser } from "../../../services/AuthService";
 
 type LocationState = {
   email: string;
@@ -97,13 +98,6 @@ export function Signup() {
 
   return (
     <IonPage>
-      {/* Header personalizado de la aplicación */}
-      <CustomHeader
-        pageName="Registro"
-        showMenuButton={false}
-        showLogoutButton={false}
-      />
-
       {/* Contenido principal de la página */}
       <IonContent class="signup-page ion-padding">
         <h2>Registro de Personas</h2>

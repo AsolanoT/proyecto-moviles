@@ -10,7 +10,7 @@ import {
   useIonToast,
   IonText,
 } from "@ionic/react";
-import CustomHeader from "../../components/Header/CustomHeader";
+import CustomHeader from "../../../components/Header/CustomHeader";
 import { useFormik } from "formik";
 import { useHistory } from "react-router-dom";
 import "./Login.scss";
@@ -22,7 +22,7 @@ import {
 } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { initialValues, validationSchema } from "./Login.form";
-import { loginUser } from "../../services/AuthService";
+import { loginUser } from "../../../services/AuthService";
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);

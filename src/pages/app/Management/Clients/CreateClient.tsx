@@ -30,8 +30,8 @@ import {
 import { initialValues, validationSchema } from "./CreateClient.form";
 import { useState } from "react";
 
-import CustomHeader from "../../../components/Header/CustomHeader";
-import { createClient } from "../../../services/clientService";
+import CustomHeader from "../../../../components/Header/CustomHeader";
+import { createClient } from "../../../../services/clientService";
 
 export function CreateClient() {
   const history = useHistory();

@@ -1,4 +1,4 @@
-import { Login } from "../Login/Login";
+import { Login } from "../auth/Login/Login";
 import { AuthRoutes } from "./AuthRoutes";
 import { Redirect, Route } from "react-router-dom";
 

@@ -11,7 +11,7 @@ import { useHistory, useLocation } from "react-router-dom";
 
 import { useState } from "react";
 import "./VerifyEmail.scss";
-import { verifyEmail } from "../../../services/AuthService";
+import { verifyEmail } from "../../../../services/AuthService";
 
 type LocationState = {
   email: string;

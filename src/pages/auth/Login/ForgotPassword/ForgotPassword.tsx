@@ -8,7 +8,7 @@ import {
   IonLabel,
   IonText,
 } from "@ionic/react";
-import CustomHeader from "../../../components/Header/CustomHeader";
+import CustomHeader from "../../../../components/Header/CustomHeader";
 import { useFormik } from "formik";
 import { useHistory } from "react-router-dom";
 import "./ForgotPassword.scss";

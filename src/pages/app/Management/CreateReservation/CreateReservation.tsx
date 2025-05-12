@@ -33,14 +33,14 @@ import {
   personOutline,
   locationOutline,
 } from "ionicons/icons";
-import CustomHeader from "../../../components/Header/CustomHeader";
-import { fetchClients, Client } from "../../../services/clientService";
+import CustomHeader from "../../../../components/Header/CustomHeader";
+import { fetchClients, Client } from "../../../../services/clientService";
 import {
   fetchTouristSites,
   TouristSite,
-} from "../../../services/touristSiteService";
+} from "../../../../services/touristSiteService";
 import { initialValues, validationSchema } from "./CreateReservation.form";
-import { createReservation } from "../../../services/reservationService";
+import { createReservation } from "../../../../services/reservationService";
 
 export function CreateReservation() {
   const history = useHistory();
@@ -177,7 +177,7 @@ export function CreateReservation() {
   return (
     <IonPage>
       <CustomHeader
-        pageName="Crear Reservación"
+        pageName="Reservación"
         showMenuButton={true}
         showLogoutButton={true}
       />
