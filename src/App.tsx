@@ -105,16 +105,7 @@ export default function App() {
 
           <Route exact path="/create-factura">
             <MainLayout pageName="Factura">
-              <CreateFactura
-                status={false}
-                reservacion={{
-                  id: "",
-                }}
-                descripcion={""}
-                metodoPago={""}
-                estadoPago={""}
-                reservacionId={""}
-              />
+              <CreateFactura />
             </MainLayout>
           </Route>
 

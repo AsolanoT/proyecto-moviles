@@ -29,8 +29,12 @@ import {
 } from "ionicons/icons";
 import "./CreateFactura.scss";
 import { createFactura } from "../../../../services/facturaService";
-import { fetchReservations } from "../../../../services/reservationService";
+import {
+  fetchReservationById,
+  fetchReservations,
+} from "../../../../services/reservationService";
 import { Reservation } from "../../../../services/reservationService";
+import { generateInvoicePDF } from "../../../../services/pdfService";
 
 export function CreateFactura() {
   const history = useHistory();
@@ -43,6 +47,8 @@ export function CreateFactura() {
   >([]);
   const [showReservationSearch, setShowReservationSearch] = useState(false);
   const [reservationSearchTerm, setReservationSearchTerm] = useState("");
+  const [montoPagado, setMontoPagado] = useState(0);
+  const [totalReserva, setTotalReserva] = useState(0);
 
   // Cargar reservaciones al iniciar
   useEffect(() => {
@@ -61,24 +67,35 @@ export function CreateFactura() {
       }
     };
     loadReservations();
-  }, []);
+  }, [present]); // Agrega 'present' como dependencia
 
-  // Filtrar reservaciones
   useEffect(() => {
     if (reservationSearchTerm) {
+      const term = reservationSearchTerm.toLowerCase();
       setFilteredReservations(
-        reservations.filter(
-          (reservation) =>
-            reservation.id?.toString().includes(reservationSearchTerm) ||
-            reservation.cliente
-              ?.toString()
-              .toLowerCase()
-              .includes(reservationSearchTerm.toLowerCase()) ||
-            reservation.sitioTuristico
-              ?.toString()
-              .toLowerCase()
-              .includes(reservationSearchTerm.toLowerCase())
-        )
+        reservations.filter((reservation) => {
+          // Buscar por ID de reservación
+          if (reservation.id?.toString().includes(term)) {
+            return true;
+          }
+
+          // Buscar por ID de cliente
+          if (reservation.cliente?.id?.toString().includes(term)) {
+            return true;
+          }
+
+          // Buscar por fecha
+          if (reservation.fecha?.toLowerCase().includes(term)) {
+            return true;
+          }
+
+          // Buscar por nombre de cliente (si está disponible)
+          if (reservation.cliente?.nombre?.toLowerCase().includes(term)) {
+            return true;
+          }
+
+          return false;
+        })
       );
     } else {
       setFilteredReservations(reservations);
@@ -93,7 +110,6 @@ export function CreateFactura() {
       setIsSubmitting(true);
 
       try {
-        // Validar que los campos tengan valores válidos
         if (Number(values.reservacionId) <= 0) {
           throw new Error("Por favor seleccione una reservación válida");
         }
@@ -108,7 +124,42 @@ export function CreateFactura() {
           },
         };
 
-        await createFactura(facturaData);
+        // Crear la factura en el backend
+        const createdFactura = await createFactura(facturaData);
+
+        // Obtener los datos completos de la reservación
+        const reservacion = await fetchReservationById(values.reservacionId);
+
+        // Datos para el PDF
+        const pdfData = {
+          cliente: {
+            nombre: reservacion.cliente.nombre || "Cliente no especificado",
+            documento: reservacion.cliente.documento || "N/A",
+            email: reservacion.cliente.email || "N/A",
+          },
+          factura: {
+            consecutivo: createdFactura.id?.toString() || "1",
+            fecha: new Date().toLocaleString(),
+            metodoPago: values.metodoPago,
+            estadoPago: values.estadoPago,
+            descripcion: values.descripcion,
+            totalPagado: reservacion.total || 1200, // Usar valor de la reserva
+            excedentePagado: reservacion.excedente || 850,
+            totalAPagar: reservacion.pendiente || 350,
+          },
+          items: [
+            {
+              espacio: reservacion.sitioTuristico?.nombre || "A1 Camion",
+              tarifa: `$${reservacion.tarifa || 1200}`,
+              fechaFin: reservacion.fechaFin || new Date().toLocaleString(),
+              estado: values.estadoPago,
+            },
+          ],
+        };
+
+        // Generar y descargar el PDF
+        await generateInvoicePDF(pdfData);
+
         setShowSuccessModal(true);
       } catch (error: any) {
         present({
@@ -220,6 +271,23 @@ export function CreateFactura() {
         {formik.errors.reservacionId && (
           <IonText className="error">{formik.errors.reservacionId}</IonText>
         )}
+        {/* Agrega un campo para el monto pagado en el formulario */}
+        <IonItem
+          className="custom-item"
+          style={{ flexDirection: "column", alignItems: "flex-start" }}
+        >
+          <IonIcon icon={cashOutline} slot="start" className="custom-icon" />
+          <IonLabel position="stacked" style={{ marginBottom: "12px" }}>
+            Monto Pagado
+          </IonLabel>
+          <IonInput
+            type="number"
+            value={montoPagado}
+            onIonChange={(e) => setMontoPagado(Number(e.detail.value || 0))}
+            placeholder="Ingrese el monto pagado"
+            style={{ marginLeft: 0, width: "100%" }}
+          />
+        </IonItem>
 
         {/* Modal de búsqueda de reservaciones */}
         <IonModal
@@ -236,29 +304,35 @@ export function CreateFactura() {
               onIonChange={(e) =>
                 setReservationSearchTerm(e.detail.value || "")
               }
-              placeholder="Buscar reservación..."
+              placeholder="Buscar por ID, fecha o cliente..."
+              debounce={300} // Agrega un pequeño retraso para mejor performance
             />
             <IonList>
-              {filteredReservations.map((reservation) => (
-                <IonItem
-                  key={reservation.id}
-                  button
-                  detail={false}
-                  onClick={() => {
-                    formik.setFieldValue("reservacionId", reservation.id);
-                    setShowReservationSearch(false);
-                  }}
-                >
-                  <IonLabel>
-                    <h2>Reservación #{reservation.id}</h2>
-                    <p>
-                      Cliente: {reservation.cliente?.id} - Sitio:{" "}
-                      {reservation.sitioTuristico?.id}
-                    </p>
-                    <p>Fecha: {reservation.fecha}</p>
-                  </IonLabel>
+              {filteredReservations.length > 0 ? (
+                filteredReservations.map((reservation) => (
+                  <IonItem
+                    key={reservation.id}
+                    button
+                    detail={false}
+                    onClick={() => {
+                      formik.setFieldValue("reservacionId", reservation.id);
+                      setShowReservationSearch(false);
+                    }}
+                  >
+                    <IonLabel>
+                      <h2>Reservación #{reservation.id}</h2>
+                      <p>Cliente: ID {reservation.cliente?.id}</p>
+                      <p>Sitio: ID {reservation.sitioTuristico?.id}</p>
+                      <p>Fecha: {reservation.fecha}</p>
+                      {reservation.total && <p>Total: ${reservation.total}</p>}
+                    </IonLabel>
+                  </IonItem>
+                ))
+              ) : (
+                <IonItem>
+                  <IonLabel>No se encontraron reservaciones</IonLabel>
                 </IonItem>
-              ))}
+              )}
             </IonList>
           </IonContent>
         </IonModal>
@@ -285,7 +359,14 @@ export function CreateFactura() {
       </IonContent>
 
       {/* Modal de éxito */}
-      <IonModal isOpen={showSuccessModal} className="success-modal">
+      <IonModal
+        isOpen={showSuccessModal}
+        onDidDismiss={() => {
+          setShowSuccessModal(false);
+          history.push("/dashboard");
+        }}
+        className="success-modal"
+      >
         <div className="modal-content">
           <IonIcon
             icon={cashOutline}
@@ -294,7 +375,7 @@ export function CreateFactura() {
           />
           <h2 className="modal-title">¡Factura generada!</h2>
           <p className="modal-message">
-            La factura ha sido creada correctamente.
+            La factura ha sido creada correctamente y el PDF se ha descargado.
           </p>
           <div className="modal-buttons">
             <IonButton

@@ -4,9 +4,11 @@ export function initialValues() {
   return {
     descripcion: "",
     metodoPago: "",
-    estadoPago: "",
+    estadoPago: "Pendiente", // Valor por defecto
     reservacionId: 0,
-    status: true // Valor por defecto
+    status: true,
+    montoPagado: 0,
+    totalReserva: 0
   };
 }
 
@@ -18,6 +20,8 @@ export function validationSchema() {
     reservacionId: Yup.number()
       .required("El ID de reservación es requerido")
       .min(1, "ID inválido"),
-    status: Yup.boolean().required("El estado es requerido")
+    status: Yup.boolean().required("El estado es requerido"),
+    montoPagado: Yup.number().min(0, "El monto no puede ser negativo"),
+    totalReserva: Yup.number().min(0, "El total no puede ser negativo")
   });
 }
