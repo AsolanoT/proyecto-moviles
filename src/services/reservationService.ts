@@ -14,31 +14,15 @@ interface SitioTuristico {
 
 export interface Reservation {
   id?: number;
-  status?: boolean;
-  fecha: string;
-  hora: string;
+  status?: boolean; // Agregar este campo
+  fecha: string; // Format: "YYYY-MM-DD"
+  hora: string;  // Format: "HH:MM:SS"
   numeroPersonas: number;
   observaciones: string;
   tipoReserva: string;
   user: User;
-  cliente: {
-    id: number;
-    nombre: string;
-    documento?: string;
-    email?: string;
-    // Agrega otras propiedades del cliente si son necesarias
-  };
-  sitioTuristico: {
-    id: number;
-    nombre: string;
-    // Agrega otras propiedades del sitio turístico si son necesarias
-  };
-  total?: number;
-  excedente?: number;
-  pendiente?: number;
-  tarifa?: number;
-  fechaFin?: string;
-  // Agrega otras propiedades que necesites
+  cliente: Cliente;
+  sitioTuristico: SitioTuristico;
 }
 
 export const fetchReservations = async (): Promise<Reservation[]> => {
@@ -57,17 +41,6 @@ export const fetchReservationById = async (id: number): Promise<Reservation> => 
     return response.data;
   } catch (error) {
     console.error(`Error fetching reservation with ID ${id}:`, error);
-    throw error;
-  }
-};
-
-// En reservationService.ts
-export const fetchReservationsWithDetails = async (): Promise<Reservation[]> => {
-  try {
-    const response = await api.get<Reservation[]>('/reservacion?include=cliente,sitio');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching reservations:', error);
     throw error;
   }
 };

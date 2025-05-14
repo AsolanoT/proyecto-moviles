@@ -148,11 +148,6 @@ export function CreateReservation() {
         }
 
         // Formatear fecha y hora para la API
-        const selectedClient = clients.find((c) => c.id === values.cliente.id);
-        const selectedSite = touristSites.find(
-          (s) => s.id === values.sitioTuristico.id
-        );
-
         const formattedData = {
           ...values,
           fecha: values.fecha.split("T")[0], // Extraer solo la parte de la fecha
@@ -161,16 +156,6 @@ export function CreateReservation() {
             : values.hora,
           user: {
             id: 1, // Esto debería venir del contexto de autenticación
-          },
-          cliente: {
-            id: selectedClient?.id ?? values.cliente.id,
-            nombre: selectedClient?.fullName ?? "",
-            documento: selectedClient?.documentNumber ?? "",
-            email: selectedClient?.email ?? "",
-          },
-          sitioTuristico: {
-            id: selectedSite?.id ?? values.sitioTuristico.id,
-            nombre: selectedSite?.title ?? "",
           },
         };
 
