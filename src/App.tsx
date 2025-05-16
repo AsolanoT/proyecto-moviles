@@ -37,7 +37,11 @@ import { CreateClient } from "./pages/app/Management/Clients/CreateClient";
 import AuthLayout from "./components/layouts/AuthLayout";
 import MainLayout from "./components/layouts/MainLayout";
 import { CreateFactura } from "./pages/app/Management/CreateFactura/CreateFactura";
-
+/* Importaciones de los listados completos */
+import { ClientsPage } from "./pages/app/DataViews/Clients";
+import { ReservationsPage } from "./pages/app/DataViews/Reservations";
+import { TouristSitesPage } from "./pages/app/DataViews/TouristSites";
+import { FacturasPage } from "./pages/app/DataViews/Facturas";
 /* Layouts */
 
 setupIonicReact();
@@ -106,6 +110,31 @@ export default function App() {
           <Route exact path="/create-factura">
             <MainLayout pageName="Factura">
               <CreateFactura />
+            </MainLayout>
+          </Route>
+
+          {/* Rutas para los listados completos */}
+          <Route exact path="/clients">
+            <MainLayout pageName="Clientes">
+              <ClientsPage />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/reservations">
+            <MainLayout pageName="Reservaciones">
+              <ReservationsPage />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/tourist-sites">
+            <MainLayout pageName="Sitios Turísticos">
+              <TouristSitesPage />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/facturas">
+            <MainLayout pageName="Facturas">
+              <FacturasPage />
             </MainLayout>
           </Route>
 

@@ -47,9 +47,6 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
             <IonButton onClick={handleLogout}>
               <IonIcon icon={logOutOutline} />
             </IonButton>
-            <IonButton>
-              <IonIcon icon={personCircleOutline} />
-            </IonButton>
           </IonButtons>
         )}
       </IonToolbar>
