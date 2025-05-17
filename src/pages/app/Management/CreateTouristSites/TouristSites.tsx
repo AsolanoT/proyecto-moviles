@@ -103,7 +103,6 @@ export function TouristSite() {
           const siteData = await fetchTouristSiteById(parseInt(id));
           formik.setValues({
             status: siteData.status ?? true,
-            code: siteData.code,
             title: siteData.title,
             description: siteData.description,
             type: siteData.type,
@@ -153,21 +152,6 @@ export function TouristSite() {
         <IonLoading isOpen={isLoading} message="Cargando datos..." />
 
         <h2>{id ? "Editar Sitio Turístico" : "Registro de Sitio Turístico"}</h2>
-
-        {/* Código del sitio */}
-        {/* Código del sitio */}
-        <IonItem className="custom-item">
-          <IonIcon icon={ticketOutline} slot="start" className="custom-icon" />
-          <IonLabel>Código del Sitio</IonLabel>
-        </IonItem>
-        <IonInput
-          value={formik.values.code}
-          placeholder="Ingrese el código único del sitio"
-          onIonChange={(e) => formik.setFieldValue("code", e.detail.value)}
-        />
-        {formik.errors.code && (
-          <IonText className="error">{formik.errors.code}</IonText>
-        )}
 
         {/* Título */}
         <IonItem className="custom-item">

@@ -4,7 +4,7 @@ import api from './api';
 export interface TouristSite {
   id?: number;
   status: boolean;
-  code: string;
+
   title: string;
   description: string;
   type: string;

@@ -4,7 +4,6 @@ import * as Yup from "yup";
 export function initialValues(site?: TouristSite) {
   return {
     status: site?.status ?? true,
-    code: site?.code ?? "",
     title: site?.title ?? "",
     description: site?.description ?? "",
     type: site?.type ?? "lugar", // Valor por defecto
@@ -18,10 +17,6 @@ export function initialValues(site?: TouristSite) {
 
 export function validationSchema() {
   return Yup.object().shape({
-    code: Yup.string()
-      .required("El código es requerido")
-      .min(3, "El código debe tener al menos 3 caracteres")
-      .max(20, "El código no puede exceder 20 caracteres"),
       
     title: Yup.string()
       .required("El título es requerido")
