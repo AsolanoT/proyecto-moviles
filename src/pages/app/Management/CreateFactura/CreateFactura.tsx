@@ -117,65 +117,185 @@ export function CreateFactura() {
   const generarPDF = (facturaData: Factura, reservacionData?: Reservation) => {
     const doc = new jsPDF();
 
-    // Encabezado
-    doc.setFontSize(20);
-    doc.setTextColor(0, 0, 255);
-    doc.text("✈ Explora Neiva", 105, 20, { align: "center" });
-    doc.setFontSize(16);
-    doc.text("Factura de Turismo", 105, 30, { align: "center" });
+    // Configuración inicial
+    const marginLeft = 14;
+    let currentY = 20;
 
-    // Información de la factura
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Número de Factura: ${facturaData.id || "NUEVA"}`, 14, 45);
-    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 55);
-
-    // Datos de la reservación
-    if (reservacionData) {
-      doc.setFontSize(14);
-      doc.text("Detalles de la Reservación", 14, 70);
-      doc.setFontSize(12);
-      doc.text(`Reservación #: ${reservacionData.id}`, 14, 80);
-      doc.text(`Fecha Reservación: ${reservacionData.fecha}`, 14, 90);
+    // Logo de la empresa
+    const logoUrl = "https://www.pngkey.com/png/full/74-740215_avion-icon.png";
+    try {
+      doc.addImage(logoUrl, "PNG", marginLeft, currentY, 30, 30);
+    } catch (e) {
+      console.warn("No se pudo cargar el logo, continuando sin él");
     }
 
-    // Detalles de factura
-    doc.setFontSize(14);
-    doc.text("Detalles de Factura", 14, reservacionData ? 105 : 70);
+    // Encabezado de la factura
+    doc.setFontSize(20);
+    doc.setTextColor(41, 128, 185); // Azul corporativo
+    doc.text("Explora Neiva", marginLeft + 35, currentY + 15);
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100); // Gris oscuro
+    doc.text(
+      "Agencia de Turismo Especializada",
+      marginLeft + 35,
+      currentY + 22
+    );
 
-    // Tabla de detalles
+    // Línea divisoria
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(marginLeft, currentY + 30, 200, currentY + 30);
+    currentY += 40;
+
+    // Información de la factura
+    doc.setFontSize(14);
+    doc.setTextColor(41, 128, 185);
+    doc.text("FACTURA", marginLeft, currentY);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Número: ${facturaData.id || "PENDIENTE"}`, 140, currentY);
+    currentY += 7;
+    doc.text(`Fecha: ${new Date().toLocaleDateString("es-ES")}`, 140, currentY);
+    currentY += 15;
+
+    // Información del cliente (si hay reservación)
+    if (reservacionData && reservacionData.cliente) {
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text("DATOS DEL CLIENTE", marginLeft, currentY);
+      currentY += 7;
+
+      doc.setFontSize(10);
+      doc.text(
+        `Nombre: ${reservacionData.cliente.fullName || "No disponible"}`,
+        marginLeft,
+        currentY
+      );
+      currentY += 7;
+      doc.text(
+        `Documento: ${reservacionData.cliente.documentType || ""} ${
+          reservacionData.cliente.documentNumber || ""
+        }`,
+        marginLeft,
+        currentY
+      );
+      currentY += 7;
+      doc.text(
+        `Email: ${reservacionData.cliente.email || "No disponible"}`,
+        marginLeft,
+        currentY
+      );
+      currentY += 15;
+    }
+
+    // Detalles de la reservación
+    if (reservacionData) {
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text("DETALLES DE LA RESERVACIÓN", marginLeft, currentY);
+      currentY += 7;
+
+      doc.setFontSize(10);
+      doc.text(`Número: ${reservacionData.id}`, marginLeft, currentY);
+      currentY += 7;
+      doc.text(`Fecha: ${reservacionData.fecha}`, marginLeft, currentY);
+      currentY += 7;
+      doc.text(
+        `Sitio Turístico: ${
+          reservacionData.sitioTuristico?.title || "No disponible"
+        }`,
+        marginLeft,
+        currentY
+      );
+      currentY += 7;
+      doc.text(`Tipo: ${reservacionData.tipoReserva}`, marginLeft, currentY);
+      currentY += 15;
+    }
+
+    // Tabla de detalles de la factura
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text("DETALLES DE FACTURACIÓN", marginLeft, currentY);
+    currentY += 10;
+
     autoTable(doc, {
-      startY: reservacionData ? 115 : 80,
-      head: [["Concepto", "Valor"]],
+      startY: currentY,
+      head: [["Descripción", "Valor"]],
       body: [
-        ["Descripción", facturaData.descripcion],
+        ["Descripción del servicio", facturaData.descripcion],
         ["Método de Pago", facturaData.metodoPago],
         ["Estado de Pago", facturaData.estadoPago],
-        ["Monto Total", `$${facturaData.montoTotal || 0}`],
+        [
+          "Monto Total",
+          `$${facturaData.montoTotal?.toLocaleString("es-ES") || "0"}`,
+        ],
       ],
+      margin: { left: marginLeft },
       styles: {
         cellPadding: 5,
-        fontSize: 12,
+        fontSize: 10,
         valign: "middle",
+        halign: "left",
+        textColor: [0, 0, 0],
       },
       headStyles: {
         fillColor: [41, 128, 185],
-        textColor: 255,
+        textColor: [255, 255, 255],
         fontStyle: "bold",
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      columnStyles: {
+        0: { cellWidth: "auto", fontStyle: "bold" },
+        1: { cellWidth: "auto" },
       },
     });
 
-    // Pie de página
-    doc.setFontSize(10);
+    // Obtener posición final de la tabla
+    currentY = (doc as any).lastAutoTable.finalY + 15;
+
+    // Notas importantes
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
+    doc.text("Notas:", marginLeft, currentY);
+    currentY += 5;
     doc.text(
-      "Gracias por preferir nuestros servicios turísticos",
-      105,
-      doc.internal.pageSize.height - 10,
-      { align: "center" }
+      "- Esta factura es válida como comprobante de pago.",
+      marginLeft,
+      currentY
+    );
+    currentY += 5;
+    doc.text(
+      "- Para reclamos o devoluciones, presentar este documento.",
+      marginLeft,
+      currentY
+    );
+    currentY += 5;
+    doc.text(
+      "- Gracias por preferir nuestros servicios turísticos.",
+      marginLeft,
+      currentY
     );
 
-    doc.save(`factura_${facturaData.id || "nueva"}.pdf`);
+    // Pie de página
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Explora Neiva - Agencia de Turismo", marginLeft, 285);
+    doc.text(
+      "Tel: +57 123 456 7890 | Email: info@exploraneiva.com",
+      marginLeft,
+      290
+    );
+    doc.text("Nit: 123.456.789-0 | Regimen: Simplificado", marginLeft, 295);
+
+    // Guardar el PDF
+    doc.save(
+      `Factura_${facturaData.id || "nueva"}_${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`
+    );
   };
 
   const formik = useFormik({
@@ -368,8 +488,13 @@ export function CreateFactura() {
                   <IonLabel>
                     <h2>Reservación #{reservation.id}</h2>
                     <p>
-                      Cliente: {reservation.cliente?.id} - Sitio:{" "}
-                      {reservation.sitioTuristico?.id}
+                      Cliente:{" "}
+                      {reservation.cliente.fullName || reservation.cliente.id}
+                    </p>
+                    <p>
+                      Sitio:{" "}
+                      {reservation.sitioTuristico.title ||
+                        reservation.sitioTuristico.id}
                     </p>
                     <p>Fecha: {reservation.fecha}</p>
                   </IonLabel>

@@ -14,15 +14,25 @@ interface SitioTuristico {
 
 export interface Reservation {
   id?: number;
-  status?: boolean; // Agregar este campo
-  fecha: string; // Format: "YYYY-MM-DD"
-  hora: string;  // Format: "HH:MM:SS"
+  status?: boolean;
+  fecha: string;
+  hora: string;
   numeroPersonas: number;
   observaciones: string;
   tipoReserva: string;
   user: User;
-  cliente: Cliente;
-  sitioTuristico: SitioTuristico;
+  cliente: {
+    id: number;
+    fullName?: string;       // Nuevo campo para facturación
+    documentType?: string;  // Nuevo campo para facturación
+    documentNumber?: string;// Nuevo campo para facturación
+    email?: string;         // Nuevo campo para facturación
+  };
+  sitioTuristico: {
+    id: number;
+    title?: string;         // Nuevo campo para facturación
+  };
+  // Mantener todos los campos existentes
 }
 
 export const fetchReservations = async (): Promise<Reservation[]> => {

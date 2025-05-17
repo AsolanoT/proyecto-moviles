@@ -5,7 +5,7 @@ export function initialValues(factura?: Factura) {
   return {
     descripcion: factura?.descripcion ?? "",
     metodoPago: factura?.metodoPago ?? "",
-    estadoPago: factura?.estadoPago ?? "",
+    estadoPago: factura?.estadoPago ?? "", // Valor por defecto
     reservacionId: factura?.reservacion.id ?? 0,
     status: factura?.status ?? true,
     montoTotal: factura?.montoTotal ?? 0
@@ -16,25 +16,23 @@ export function validationSchema() {
   return Yup.object().shape({
     descripcion: Yup.string()
       .required("La descripción es requerida")
-      .max(500, "La descripción no puede exceder 500 caracteres"),
+      .max(500, "Máximo 500 caracteres"),
     metodoPago: Yup.string()
-      .required("El método de pago es requerido")
+      .required("Seleccione un método de pago")
       .oneOf(
         ["Tarjeta de crédito", "Efectivo", "Transferencia", "PSE"],
-        "Método de pago no válido"
+        "Método no válido"
       ),
     estadoPago: Yup.string()
-      .required("El estado de pago es requerido")
-      .oneOf(
-        ["Pendiente", "Pagado", "Cancelado"],
-        "Estado de pago no válido"
-      ),
+      .required("Seleccione un estado")
+      .oneOf(["Pendiente", "Pagado", "Cancelado"], "Estado no válido"),
     reservacionId: Yup.number()
-      .required("Debe seleccionar una reservación")
-      .min(1, "ID inválido"),
-    status: Yup.boolean().required("El estado es requerido"),
+      .required("Seleccione una reservación")
+      .min(1, "Reservación inválida"),
+    status: Yup.boolean().required("Estado requerido"),
     montoTotal: Yup.number()
-      .required("El monto total es requerido")
-      .min(0, "El monto no puede ser negativo")
+      .required("Monto requerido")
+      .min(0, "No puede ser negativo")
+      .typeError("Debe ser un número válido")
   });
 }
