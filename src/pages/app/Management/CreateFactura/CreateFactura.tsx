@@ -13,9 +13,10 @@ import {
   IonModal,
   IonSearchbar,
   IonList,
+  IonLoading,
 } from "@ionic/react";
 import { useFormik } from "formik";
-import { useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 import { initialValues, validationSchema } from "./CreateFactura.form";
 import { useState, useEffect } from "react";
 import CustomHeader from "../../../../components/Header/CustomHeader";
@@ -24,32 +25,28 @@ import {
   cardOutline,
   receiptOutline,
   calendarOutline,
+  checkmarkOutline,
 } from "ionicons/icons";
 import "./CreateFactura.scss";
-import { createFactura } from "../../../../services/facturaService";
-import { fetchReservations } from "../../../../services/reservationService";
-import { Reservation } from "../../../../services/reservationService";
+import {
+  createFactura,
+  updateFactura,
+  getFacturaById,
+  Factura,
+} from "../../../../services/facturaService";
+import {
+  fetchReservations,
+  Reservation,
+} from "../../../../services/reservationService";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
-interface CreateFacturaProps {
-  status?: boolean;
-  reservacion?: {
-    id: string;
-  };
-  descripcion?: string;
-  metodoPago?: string;
-  estadoPago?: string;
-  reservacionId?: string;
-  totalPagado?: number;
-  excedentePagado?: number;
-  totalAPagar?: number;
-}
-
 export function CreateFactura() {
   const history = useHistory();
+  const { id } = useParams<{ id?: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!id);
   const [present] = useIonToast();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<
@@ -58,24 +55,44 @@ export function CreateFactura() {
   const [showReservationSearch, setShowReservationSearch] = useState(false);
   const [reservationSearchTerm, setReservationSearchTerm] = useState("");
 
+  // Cargar datos iniciales
   useEffect(() => {
-    const loadReservations = async () => {
+    const loadData = async () => {
       try {
-        const reservationsData = await fetchReservations();
+        const [reservationsData] = await Promise.all([fetchReservations()]);
+
         setReservations(reservationsData);
         setFilteredReservations(reservationsData);
+
+        // Si hay ID, cargar datos de la factura
+        if (id) {
+          const facturaData = await getFacturaById(parseInt(id));
+          formik.setValues({
+            descripcion: facturaData.descripcion,
+            metodoPago: facturaData.metodoPago,
+            estadoPago: facturaData.estadoPago,
+            reservacionId: facturaData.reservacion.id,
+            status: facturaData.status,
+            montoTotal: facturaData.montoTotal || 0,
+          });
+        }
       } catch (error) {
         present({
-          message: "Error cargando reservaciones",
+          message: "Error cargando datos",
           duration: 3000,
           position: "top",
           color: "danger",
         });
+        if (id) history.push("/facturas");
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadReservations();
-  }, []);
 
+    loadData();
+  }, [id]);
+
+  // Filtrar reservaciones
   useEffect(() => {
     if (reservationSearchTerm) {
       setFilteredReservations(
@@ -97,7 +114,7 @@ export function CreateFactura() {
     }
   }, [reservationSearchTerm, reservations]);
 
-  const generarPDF = (facturaData: any, reservacionData: any) => {
+  const generarPDF = (facturaData: Factura, reservacionData?: Reservation) => {
     const doc = new jsPDF();
 
     // Encabezado
@@ -114,24 +131,27 @@ export function CreateFactura() {
     doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 55);
 
     // Datos de la reservación
-    doc.setFontSize(14);
-    doc.text("Detalles de la Reservación", 14, 70);
-    doc.setFontSize(12);
-    doc.text(`Reservación #: ${reservacionData?.id || ""}`, 14, 80);
-    doc.text(`Fecha Reservación: ${reservacionData?.fecha || ""}`, 14, 90);
+    if (reservacionData) {
+      doc.setFontSize(14);
+      doc.text("Detalles de la Reservación", 14, 70);
+      doc.setFontSize(12);
+      doc.text(`Reservación #: ${reservacionData.id}`, 14, 80);
+      doc.text(`Fecha Reservación: ${reservacionData.fecha}`, 14, 90);
+    }
 
     // Detalles de factura
     doc.setFontSize(14);
-    doc.text("Detalles de Factura", 14, 105);
+    doc.text("Detalles de Factura", 14, reservacionData ? 105 : 70);
 
     // Tabla de detalles
     autoTable(doc, {
-      startY: 115,
+      startY: reservacionData ? 115 : 80,
       head: [["Concepto", "Valor"]],
       body: [
         ["Descripción", facturaData.descripcion],
         ["Método de Pago", facturaData.metodoPago],
         ["Estado de Pago", facturaData.estadoPago],
+        ["Monto Total", `$${facturaData.montoTotal || 0}`],
       ],
       styles: {
         cellPadding: 5,
@@ -144,34 +164,6 @@ export function CreateFactura() {
         fontStyle: "bold",
       },
     });
-
-    // Posición después de la tabla (manejo seguro del finalY)
-    let startY = 160; // Valor por defecto si no podemos obtener finalY
-    try {
-      // @ts-ignore - Intentamos acceder a la posición final de la tabla
-      const finalY = doc.lastAutoTable.finalY;
-      if (finalY && typeof finalY === "number") {
-        startY = finalY + 10;
-      }
-    } catch (e) {
-      console.warn(
-        "No se pudo obtener la posición final de la tabla, usando valor por defecto"
-      );
-    }
-
-    // Sección de pagos
-    doc.setFontSize(12);
-    doc.text(`Total a pagar: $${facturaData.totalAPagar || 0}`, 14, startY);
-    doc.text(`Paga: $${facturaData.paga || 0}`, 14, startY + 10);
-    doc.text(
-      `Cambio devuelto: $${facturaData.cambioDevuelto || 0}`,
-      14,
-      startY + 20
-    );
-
-    // Firma
-    doc.text("Firma del Cliente: __________________", 14, startY + 40);
-    doc.text("Fecha: __________________", 140, startY + 40);
 
     // Pie de página
     doc.setFontSize(10);
@@ -187,51 +179,54 @@ export function CreateFactura() {
   };
 
   const formik = useFormik({
-    initialValues: {
-      ...initialValues(),
-      totalAPagar: 0,
-      paga: 0,
-      cambioDevuelto: 0,
-    },
+    initialValues: initialValues(),
     validationSchema: validationSchema(),
     validateOnChange: false,
     onSubmit: async (values) => {
       setIsSubmitting(true);
 
       try {
-        if (Number(values.reservacionId) <= 0) {
-          throw new Error("Por favor seleccione una reservación válida");
-        }
-
         const facturaData = {
           descripcion: values.descripcion,
           metodoPago: values.metodoPago,
           estadoPago: values.estadoPago,
-          totalPagado: values.totalAPagar,
-          excedentePagado: values.paga,
-          totalAPagar: values.cambioDevuelto,
           status: true,
           reservacion: {
             id: values.reservacionId,
           },
+          montoTotal: values.montoTotal,
         };
 
-        const response = await createFactura(facturaData);
+        let response: Factura;
+        if (id) {
+          // Modo edición
+          response = await updateFactura(parseInt(id), facturaData);
+          present({
+            message: "Factura actualizada correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        } else {
+          // Modo creación
+          response = await createFactura(facturaData);
+          present({
+            message: "Factura creada correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        }
+
         const reservacionSeleccionada = reservations.find(
           (r) => r.id === values.reservacionId
         );
 
-        generarPDF(
-          {
-            ...response,
-            ...facturaData,
-          },
-          reservacionSeleccionada
-        );
+        generarPDF(response, reservacionSeleccionada);
         setShowSuccessModal(true);
       } catch (error: any) {
         present({
-          message: error.message || "Error al crear la factura",
+          message: error.message || "Error al procesar la factura",
           duration: 5000,
           position: "top",
           color: "danger",
@@ -245,13 +240,15 @@ export function CreateFactura() {
   return (
     <IonPage>
       <CustomHeader
-        pageName="Generar Factura"
+        pageName={id ? "Editar Factura" : "Crear Factura"}
         showMenuButton={true}
         showLogoutButton={true}
       />
 
       <IonContent className="factura-page ion-padding">
-        <h2>Generar Nueva Factura</h2>
+        <IonLoading isOpen={isLoading} message="Cargando datos..." />
+
+        <h2>{id ? "Editar Factura" : "Nueva Factura"}</h2>
 
         {/* Descripción */}
         <IonItem className="custom-item">
@@ -314,42 +311,6 @@ export function CreateFactura() {
         {formik.errors.estadoPago && (
           <IonText className="error">{formik.errors.estadoPago}</IonText>
         )}
-
-        {/* Campos de valores monetarios */}
-
-        <IonItem className="custom-item">
-          <IonIcon icon={cashOutline} slot="start" className="custom-icon" />
-          <IonLabel>Total a pagar</IonLabel>
-          <IonInput
-            type="number"
-            value={formik.values.totalAPagar}
-            onIonChange={(e) =>
-              formik.setFieldValue("totalAPagar", e.detail.value)
-            }
-          />
-        </IonItem>
-
-        <IonItem className="custom-item">
-          <IonIcon icon={cashOutline} slot="start" className="custom-icon" />
-          <IonLabel>Paga</IonLabel>
-          <IonInput
-            type="number"
-            value={formik.values.paga}
-            onIonChange={(e) => formik.setFieldValue("paga", e.detail.value)}
-          />
-        </IonItem>
-
-        <IonItem className="custom-item">
-          <IonIcon icon={cashOutline} slot="start" className="custom-icon" />
-          <IonLabel>Cambio devuelto</IonLabel>
-          <IonInput
-            type="number"
-            value={formik.values.cambioDevuelto}
-            onIonChange={(e) =>
-              formik.setFieldValue("cambioDevuelto", e.detail.value)
-            }
-          />
-        </IonItem>
 
         {/* Selector de Reservación */}
         <IonItem
@@ -434,7 +395,11 @@ export function CreateFactura() {
             onClick={() => formik.handleSubmit()}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Generando..." : "Generar Factura"}
+            {isSubmitting
+              ? "Procesando..."
+              : id
+              ? "Actualizar Factura"
+              : "Crear Factura"}
           </IonButton>
         </div>
       </IonContent>
@@ -443,20 +408,24 @@ export function CreateFactura() {
       <IonModal isOpen={showSuccessModal} className="success-modal">
         <div className="modal-content">
           <IonIcon
-            icon={cashOutline}
+            icon={checkmarkOutline}
             color="success"
             style={{ fontSize: "3rem", marginBottom: "16px" }}
           />
-          <h2 className="modal-title">¡Factura generada!</h2>
+          <h2 className="modal-title">
+            {id ? "¡Factura actualizada!" : "¡Factura generada!"}
+          </h2>
           <p className="modal-message">
-            La factura ha sido creada correctamente.
+            {id
+              ? "La factura ha sido actualizada correctamente."
+              : "La factura ha sido creada correctamente."}
           </p>
           <div className="modal-buttons">
             <IonButton
               expand="block"
               onClick={() => {
                 setShowSuccessModal(false);
-                history.push("/dashboard");
+                history.push("/facturas");
               }}
             >
               Aceptar

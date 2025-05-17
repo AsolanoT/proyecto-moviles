@@ -13,9 +13,10 @@ import {
   IonImg,
   useIonToast,
   IonLabel,
+  IonLoading,
 } from "@ionic/react";
 import { useFormik } from "formik";
-import { useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 import "./TouristSites.scss";
 import { initialValues, validationSchema } from "./TouristSites.form";
 import { useState, useEffect } from "react";
@@ -32,12 +33,18 @@ import {
   homeOutline,
 } from "ionicons/icons";
 import CustomHeader from "../../../../components/Header/CustomHeader";
-import { createTouristSite } from "../../../../services/touristSiteService";
+import {
+  createTouristSite,
+  updateTouristSite,
+  fetchTouristSiteById,
+} from "../../../../services/touristSiteService";
 
 export function TouristSite() {
   const history = useHistory();
+  const { id } = useParams<{ id?: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!id); // Cargar solo si estamos editando
   const [present] = useIonToast();
 
   const formik = useFormik({
@@ -48,26 +55,36 @@ export function TouristSite() {
       setIsSubmitting(true);
 
       try {
-        // Enviamos los datos al backend
-        const response = await createTouristSite({
-          code: values.code,
-          title: values.title,
-          description: values.description,
-          type: values.type,
-          imageUrl: values.imageUrl,
-          location: values.location,
-          schedule: values.schedule,
-          price: values.price || 0, // Aseguramos que price tenga un valor
-          contact: values.contact,
-        });
+        if (id) {
+          // Modo edición
+          await updateTouristSite(parseInt(id), {
+            ...values,
+            price: values.price == null ? 0 : values.price,
+          });
+          present({
+            message: "Sitio turístico actualizado correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        } else {
+          // Modo creación
+          await createTouristSite({
+            ...values,
+            price: values.price == null ? 0 : values.price,
+          });
+          present({
+            message: "Sitio turístico creado correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        }
 
-        console.log("Respuesta del servidor:", response);
-
-        // Mostrar modal de éxito
         setShowSuccessModal(true);
       } catch (error: any) {
         present({
-          message: error.message || "Error al registrar el sitio turístico",
+          message: error.message || "Error al procesar la solicitud",
           duration: 5000,
           position: "top",
           color: "danger",
@@ -78,10 +95,44 @@ export function TouristSite() {
     },
   });
 
+  // Cargar datos para edición
+  useEffect(() => {
+    if (id) {
+      const loadSiteData = async () => {
+        try {
+          const siteData = await fetchTouristSiteById(parseInt(id));
+          formik.setValues({
+            status: siteData.status ?? true,
+            code: siteData.code,
+            title: siteData.title,
+            description: siteData.description,
+            type: siteData.type,
+            imageUrl: siteData.imageUrl,
+            location: siteData.location,
+            schedule: siteData.schedule,
+            price: siteData.price,
+            contact: siteData.contact,
+          });
+        } catch (error) {
+          present({
+            message: "Error al cargar los datos del sitio",
+            duration: 3000,
+            position: "top",
+            color: "danger",
+          });
+          history.push("/tourist-sites");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadSiteData();
+    }
+  }, [id]);
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // En una aplicación real, aquí subirías la imagen a un servicio como Cloudinary
       const reader = new FileReader();
       reader.onload = (e) => {
         formik.setFieldValue("imageUrl", e.target?.result as string);
@@ -93,14 +144,17 @@ export function TouristSite() {
   return (
     <IonPage>
       <CustomHeader
-        pageName="Sitio Turístico"
+        pageName={id ? "Editar Sitio Turístico" : "Sitio Turístico"}
         showMenuButton={true}
         showLogoutButton={true}
       />
 
       <IonContent class="tourist-site-registration ion-padding">
-        <h2>Registro de Sitio Turístico</h2>
+        <IonLoading isOpen={isLoading} message="Cargando datos..." />
 
+        <h2>{id ? "Editar Sitio Turístico" : "Registro de Sitio Turístico"}</h2>
+
+        {/* Código del sitio */}
         {/* Código del sitio */}
         <IonItem className="custom-item">
           <IonIcon icon={ticketOutline} slot="start" className="custom-icon" />
@@ -287,7 +341,11 @@ export function TouristSite() {
             onClick={() => formik.handleSubmit()}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Procesando..." : "Registrar Sitio"}
+            {isSubmitting
+              ? "Procesando..."
+              : id
+              ? "Actualizar Sitio"
+              : "Registrar Sitio"}
           </IonButton>
         </div>
       </IonContent>
@@ -300,16 +358,20 @@ export function TouristSite() {
             color="success"
             style={{ fontSize: "3rem", marginBottom: "16px" }}
           />
-          <h2 className="modal-title">¡Registro exitoso!</h2>
+          <h2 className="modal-title">
+            {id ? "¡Actualización exitosa!" : "¡Registro exitoso!"}
+          </h2>
           <p className="modal-message">
-            El sitio turístico ha sido registrado correctamente.
+            {id
+              ? "El sitio turístico ha sido actualizado correctamente."
+              : "El sitio turístico ha sido registrado correctamente."}
           </p>
           <div className="modal-buttons">
             <IonButton
               expand="block"
               onClick={() => {
                 setShowSuccessModal(false);
-                history.push("/dashboard"); // Redirigir a la lista de sitios
+                history.push("/tourist-sites");
               }}
             >
               Aceptar

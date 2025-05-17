@@ -138,6 +138,31 @@ export default function App() {
             </MainLayout>
           </Route>
 
+          {/* Rutas para los edit */}
+          <Route exact path="/edit-touristsite/:id">
+            <MainLayout pageName="Editar Sitio Turístico">
+              <TouristSite />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/edit-client/:id">
+            <MainLayout pageName="Editar Cliente">
+              <CreateClient />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/edit-reservation/:id">
+            <MainLayout pageName="Editar Reservación">
+              <CreateReservation />
+            </MainLayout>
+          </Route>
+
+          <Route exact path="/edit-factura/:id">
+            <MainLayout pageName="Editar Factura">
+              <CreateFactura />
+            </MainLayout>
+          </Route>
+
           <Redirect exact from="/" to="/welcome" />
         </IonRouterOutlet>
       </IonReactRouter>

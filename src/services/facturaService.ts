@@ -12,6 +12,7 @@ export interface Factura {
   metodoPago: string;
   estadoPago: string;
   reservacion: Reservacion;
+  montoTotal: number;
 }
 
 export const fetchFacturas = async (): Promise<Factura[]> => {

@@ -18,9 +18,10 @@ import {
   IonList,
   IonAvatar,
   IonImg,
+  IonLoading,
 } from "@ionic/react";
 import { useFormik } from "formik";
-import { useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 import "./CreateReservation.scss";
 import { useEffect, useState } from "react";
 import {
@@ -40,12 +41,18 @@ import {
   TouristSite,
 } from "../../../../services/touristSiteService";
 import { initialValues, validationSchema } from "./CreateReservation.form";
-import { createReservation } from "../../../../services/reservationService";
+import {
+  createReservation,
+  updateReservation,
+  fetchReservationById,
+} from "../../../../services/reservationService";
 
 export function CreateReservation() {
   const history = useHistory();
+  const { id } = useParams<{ id?: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!id);
   const [present] = useIonToast();
 
   // Estados para clientes y sitios turísticos
@@ -114,6 +121,137 @@ export function CreateReservation() {
     }
   }, [siteSearchTerm, touristSites]);
 
+  const formik = useFormik({
+    initialValues: initialValues(),
+    validationSchema: validationSchema(),
+    validateOnChange: false,
+    onSubmit: async (values) => {
+      setIsSubmitting(true);
+
+      try {
+        // Formatear datos para la API
+        const formattedData = {
+          ...values,
+          fecha: values.fecha.split("T")[0],
+          hora: values.hora.includes("T")
+            ? values.hora.split("T")[1].split(".")[0]
+            : values.hora,
+          user: {
+            id: 1, // ID del usuario autenticado
+          },
+        };
+
+        if (id) {
+          // Modo edición
+          await updateReservation(parseInt(id), formattedData);
+          present({
+            message: "Reservación actualizada correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        } else {
+          // Modo creación
+          await createReservation(formattedData);
+          present({
+            message: "Reservación creada correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        }
+
+        setShowSuccessModal(true);
+      } catch (error: any) {
+        present({
+          message: error.message || "Error al procesar la reservación",
+          duration: 5000,
+          position: "top",
+          color: "danger",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+  });
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [clientsData, sitesData] = await Promise.all([
+          fetchClients(),
+          fetchTouristSites(),
+        ]);
+
+        setClients(clientsData);
+        setFilteredClients(clientsData);
+        setTouristSites(sitesData);
+        setFilteredTouristSites(sitesData);
+
+        // Si hay ID, cargar datos de la reservación
+        if (id) {
+          const reservationData = await fetchReservationById(parseInt(id));
+          formik.setValues({
+            fecha: `${reservationData.fecha}T00:00:00`, // Formatear para el datetime
+            hora: `2000-01-01T${reservationData.hora}`, // Formatear para el datetime
+            numeroPersonas: reservationData.numeroPersonas,
+            observaciones: reservationData.observaciones,
+            tipoReserva: reservationData.tipoReserva,
+            status: reservationData.status ?? true,
+            user: { id: reservationData.user?.id ?? 1 },
+            cliente: { id: reservationData.cliente?.id },
+            sitioTuristico: { id: reservationData.sitioTuristico?.id },
+          });
+        }
+      } catch (error) {
+        present({
+          message: "Error cargando datos",
+          duration: 3000,
+          position: "top",
+          color: "danger",
+        });
+        if (id) history.push("/reservations");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [id]);
+
+  // Filtrar clientes
+  useEffect(() => {
+    if (clientSearchTerm) {
+      setFilteredClients(
+        clients.filter(
+          (client) =>
+            client.fullName
+              .toLowerCase()
+              .includes(clientSearchTerm.toLowerCase()) ||
+            client.documentNumber.includes(clientSearchTerm)
+        )
+      );
+    } else {
+      setFilteredClients(clients);
+    }
+  }, [clientSearchTerm, clients]);
+
+  // Filtrar sitios turísticos
+  useEffect(() => {
+    if (siteSearchTerm) {
+      setFilteredTouristSites(
+        touristSites.filter(
+          (site) =>
+            site.title.toLowerCase().includes(siteSearchTerm.toLowerCase()) ||
+            site.code.includes(siteSearchTerm)
+        )
+      );
+    } else {
+      setFilteredTouristSites(touristSites);
+    }
+  }, [siteSearchTerm, touristSites]);
+
   // Formatear fecha para mostrar
   const formatDisplayDate = (dateString: string) => {
     if (!dateString) return "Seleccione fecha";
@@ -130,60 +268,18 @@ export function CreateReservation() {
     return time;
   };
 
-  const formik = useFormik({
-    initialValues: initialValues(),
-    validationSchema: validationSchema(),
-    validateOnChange: false,
-    onSubmit: async (values) => {
-      setIsSubmitting(true);
-
-      try {
-        // Validar que los campos numéricos tengan valores válidos
-        if (
-          values.numeroPersonas <= 0 ||
-          values.cliente.id <= 0 ||
-          values.sitioTuristico.id <= 0
-        ) {
-          throw new Error("Por favor complete todos los campos requeridos");
-        }
-
-        // Formatear fecha y hora para la API
-        const formattedData = {
-          ...values,
-          fecha: values.fecha.split("T")[0], // Extraer solo la parte de la fecha
-          hora: values.hora.includes("T")
-            ? values.hora.split("T")[1].split(".")[0]
-            : values.hora,
-          user: {
-            id: 1, // Esto debería venir del contexto de autenticación
-          },
-        };
-
-        const response = await createReservation(formattedData);
-        setShowSuccessModal(true);
-      } catch (error: any) {
-        present({
-          message: error.message || "Error al crear la reservación",
-          duration: 5000,
-          position: "top",
-          color: "danger",
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-  });
-
   return (
     <IonPage>
       <CustomHeader
-        pageName="Reservación"
+        pageName={id ? "Editar Reservación" : "Reservación"}
         showMenuButton={true}
         showLogoutButton={true}
       />
 
       <IonContent class="create-reservation ion-padding">
-        <h2>Registro de reservaciones</h2>
+        <IonLoading isOpen={isLoading} message="Cargando datos..." />
+
+        <h2>{id ? "Editar Reservación" : "Registro de reservaciones"}</h2>
 
         {/* Fecha */}
         <IonItem className="custom-item" button id="open-date-picker">
@@ -444,7 +540,11 @@ export function CreateReservation() {
             onClick={() => formik.handleSubmit()}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Procesando..." : "Crear Reservación"}
+            {isSubmitting
+              ? "Procesando..."
+              : id
+              ? "Actualizar Reservación"
+              : "Crear Reservación"}
           </IonButton>
         </div>
       </IonContent>
@@ -457,16 +557,20 @@ export function CreateReservation() {
             color="success"
             style={{ fontSize: "3rem", marginBottom: "16px" }}
           />
-          <h2 className="modal-title">¡Reservación creada!</h2>
+          <h2 className="modal-title">
+            {id ? "¡Actualización exitosa!" : "¡Reservación creada!"}
+          </h2>
           <p className="modal-message">
-            La reservación ha sido creada correctamente.
+            {id
+              ? "La reservación ha sido actualizada correctamente."
+              : "La reservación ha sido creada correctamente."}
           </p>
           <div className="modal-buttons">
             <IonButton
               expand="block"
               onClick={() => {
                 setShowSuccessModal(false);
-                history.push("/dashboard");
+                history.push("/reservations");
               }}
             >
               Aceptar

@@ -63,3 +63,13 @@ export const deleteTouristSite = async (id: number): Promise<void> => {
     throw error;
   }
 };
+
+export const fetchTouristSiteById = async (id: number): Promise<TouristSite> => {
+  try {
+    const response = await api.get<TouristSite>(`/sitioTuristico/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching tourist site with ID ${id}:`, error);
+    throw error;
+  }
+};

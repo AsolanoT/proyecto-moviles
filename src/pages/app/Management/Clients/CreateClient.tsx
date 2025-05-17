@@ -13,10 +13,11 @@ import {
   IonButtons,
   useIonToast,
   IonText,
+  IonLoading,
   IonDatetimeButton,
 } from "@ionic/react";
 import { useFormik } from "formik";
-import { useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 import "./CreateClient.scss";
 import {
   calendarOutline,
@@ -28,15 +29,22 @@ import {
   arrowBackOutline,
 } from "ionicons/icons";
 import { initialValues, validationSchema } from "./CreateClient.form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import CustomHeader from "../../../../components/Header/CustomHeader";
-import { createClient } from "../../../../services/clientService";
+import {
+  createClient,
+  updateClient,
+  getClientById,
+} from "../../../../services/clientService";
 
 export function CreateClient() {
   const history = useHistory();
+  const { id } = useParams<{ id?: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!id); // Cargar solo si estamos editando
+
   const [present] = useIonToast();
 
   const formik = useFormik({
@@ -47,15 +55,30 @@ export function CreateClient() {
       setIsSubmitting(true);
 
       try {
-        await createClient({
-          ...values,
-          status: true,
-        });
+        if (id) {
+          // Modo edición
+          await updateClient(parseInt(id), values);
+          present({
+            message: "Cliente actualizado correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        } else {
+          // Modo creación
+          await createClient(values);
+          present({
+            message: "Cliente registrado correctamente",
+            duration: 3000,
+            position: "top",
+            color: "success",
+          });
+        }
 
         setShowSuccessModal(true);
       } catch (error: any) {
         present({
-          message: error.message || "Error al registrar el cliente",
+          message: error.message || "Error al procesar la solicitud",
           duration: 5000,
           position: "top",
           color: "danger",
@@ -65,6 +88,38 @@ export function CreateClient() {
       }
     },
   });
+
+  // Cargar datos para edición
+  useEffect(() => {
+    if (id) {
+      const loadClientData = async () => {
+        try {
+          const clientData = await getClientById(parseInt(id));
+          formik.setValues({
+            documentType: clientData.documentType,
+            documentNumber: clientData.documentNumber,
+            fullName: clientData.fullName,
+            birthDate: clientData.birthDate,
+            email: clientData.email,
+            phone: clientData.phone,
+            status: clientData.status,
+          });
+        } catch (error) {
+          present({
+            message: "Error al cargar los datos del cliente",
+            duration: 3000,
+            position: "top",
+            color: "danger",
+          });
+          history.push("/clients");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadClientData();
+    }
+  }, [id]);
   // Estados para el selector de fecha
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -77,13 +132,15 @@ export function CreateClient() {
   return (
     <IonPage>
       <CustomHeader
-        pageName="Registro de Cliente"
+        pageName={id ? "Editar Cliente" : "Cliente"}
         showMenuButton={true}
         showLogoutButton={true}
       />
 
       <IonContent class="client-page ion-padding">
-        <h2>Registro de Cliente</h2>
+        <IonLoading isOpen={isLoading} message="Cargando datos..." />
+
+        <h2>{id ? "Editar Cliente" : "Registro de Cliente"}</h2>
 
         {/* Tipo de Documento */}
         <IonItem className="custom-item" lines="full">
@@ -264,7 +321,11 @@ export function CreateClient() {
             onClick={() => formik.handleSubmit()}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Procesando..." : "Registrar Cliente"}
+            {isSubmitting
+              ? "Procesando..."
+              : id
+              ? "Actualizar Cliente"
+              : "Registrar Cliente"}
             <IonIcon icon={checkmarkOutline} slot="end" />
           </IonButton>
         </div>
@@ -278,16 +339,20 @@ export function CreateClient() {
             color="success"
             style={{ fontSize: "3rem", marginBottom: "16px" }}
           />
-          <h2 className="modal-title">¡Registro exitoso!</h2>
+          <h2 className="modal-title">
+            {id ? "¡Actualización exitosa!" : "¡Registro exitoso!"}
+          </h2>
           <p className="modal-message">
-            El cliente ha sido registrado correctamente.
+            {id
+              ? "El cliente ha sido actualizado correctamente."
+              : "El cliente ha sido registrado correctamente."}
           </p>
           <div className="modal-buttons">
             <IonButton
               expand="block"
               onClick={() => {
                 setShowSuccessModal(false);
-                history.push("/dashboard");
+                history.push("/clients");
               }}
             >
               Aceptar
