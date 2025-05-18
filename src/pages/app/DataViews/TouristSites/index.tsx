@@ -67,7 +67,6 @@ export const TouristSitesPage: React.FC = () => {
       filtered = filtered.filter(
         (site) =>
           site.title?.toLowerCase().includes(term.toLowerCase()) ||
-          site.code?.toLowerCase().includes(term.toLowerCase()) ||
           site.location?.toLowerCase().includes(term.toLowerCase()) ||
           site.type?.toLowerCase().includes(term.toLowerCase()) ||
           site.description?.toLowerCase().includes(term.toLowerCase())

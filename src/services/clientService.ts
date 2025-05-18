@@ -15,7 +15,7 @@ export interface Client {
 export const fetchClients = async (): Promise<Client[]> => {
   try {
     const response = await api.get<Client[]>('/cliente');
-    return response.data;
+    return response.data.filter((res: Client) => res.status === true); // Filtro directo;
   } catch (error) {
     console.error('Error fetching clients:', error);
     throw error;

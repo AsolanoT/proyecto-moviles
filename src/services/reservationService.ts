@@ -38,7 +38,7 @@ export interface Reservation {
 export const fetchReservations = async (): Promise<Reservation[]> => {
   try {
     const response = await api.get<Reservation[]>('/reservacion');
-    return response.data;
+    return response.data.filter((res: Reservation) => res.status === true); // Filtro directo;
   } catch (error) {
     console.error('Error fetching reservations:', error);
     throw error;

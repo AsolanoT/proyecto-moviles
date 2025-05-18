@@ -18,7 +18,7 @@ export interface Factura {
 export const fetchFacturas = async (): Promise<Factura[]> => {
   try {
     const response = await api.get<Factura[]>('/factura');
-    return response.data;
+    return response.data.filter((res: Factura) => res.status === true); // Filtro directo;
   } catch (error) {
     console.error('Error fetching invoices:', error);
     throw error;

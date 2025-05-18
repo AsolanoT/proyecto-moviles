@@ -40,9 +40,6 @@ export const TouristSiteItem: React.FC<TouristSiteItemProps> = ({
       <div className="item-content">
         <div className="item-main-info">
           <h2>{site.title}</h2>
-          <p>
-            {site.code} · {site.type}
-          </p>
         </div>
 
         <div className="item-secondary-info">

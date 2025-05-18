@@ -2,6 +2,7 @@
 import api from './api';
 
 export interface TouristSite {
+
   id?: number;
   status: boolean;
 
@@ -18,7 +19,7 @@ export interface TouristSite {
 export const fetchTouristSites = async (): Promise<TouristSite[]> => {
   try {
     const response = await api.get<TouristSite[]>('/sitioTuristico');
-    return response.data;
+    return response.data.filter((res: TouristSite) => res.status === true); // Filtro directo;
   } catch (error) {
     console.error('Error fetching tourist sites:', error);
     throw error;

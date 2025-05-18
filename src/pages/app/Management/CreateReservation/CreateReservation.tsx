@@ -110,10 +110,8 @@ export function CreateReservation() {
   useEffect(() => {
     if (siteSearchTerm) {
       setFilteredTouristSites(
-        touristSites.filter(
-          (site) =>
-            site.title.toLowerCase().includes(siteSearchTerm.toLowerCase()) ||
-            site.code.includes(siteSearchTerm)
+        touristSites.filter((site) =>
+          site.title.toLowerCase().includes(siteSearchTerm.toLowerCase())
         )
       );
     } else {
@@ -241,10 +239,8 @@ export function CreateReservation() {
   useEffect(() => {
     if (siteSearchTerm) {
       setFilteredTouristSites(
-        touristSites.filter(
-          (site) =>
-            site.title.toLowerCase().includes(siteSearchTerm.toLowerCase()) ||
-            site.code.includes(siteSearchTerm)
+        touristSites.filter((site) =>
+          site.title.toLowerCase().includes(siteSearchTerm.toLowerCase())
         )
       );
     } else {
